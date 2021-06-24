@@ -14,6 +14,14 @@ class SaasuAPI
     private string $fileID;
     private Client $client;
 
+    /**
+     * Create a guzzle client with the required parameters to use the saasu api.
+     *
+     * @param string $username
+     * @param string $password
+     * @param string $baseURI
+     * @return Client
+     */
     public static function createClient(string $username,
                                         string $password,
                                         $baseURI = 'https://api.saasu.com'): Client
@@ -46,8 +54,14 @@ class SaasuAPI
 
     }
 
-
-
+    /**
+     * Make a get request to find occurrences of the entity with the provided search attributes.
+     *
+     * @param string $entityName
+     * @param array $searchParameters
+     * @return mixed
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     */
     public function findEntity(string $entityName, array $searchParameters)
     {
         $endpoint = $entityName::SEARCH_ENDPOINT;
@@ -59,6 +73,14 @@ class SaasuAPI
         return json_decode($json);
     }
 
+    /**
+     * Make a post request to insert an entity with the provided attributes.
+     *
+     * @param string $entityName
+     * @param array $attributes
+     * @return mixed
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     */
     public function insertEntity(string $entityName, array $attributes)
     {
         $uri = $this->getUriForPost($entityName);
@@ -69,6 +91,14 @@ class SaasuAPI
         return json_decode($json);
     }
 
+    /**
+     * Get the specific entity with the provided id
+     *
+     * @param string $entityName
+     * @param $id
+     * @return mixed
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     */
     public function getEntity(string $entityName, $id)
     {
         $uri = $this->getUriForGetById($entityName, $id);
@@ -77,17 +107,37 @@ class SaasuAPI
         return json_decode($json);
     }
 
-    public function getUriForPost(string $entityName)
+    /**
+     * Create the required uri to make a post request for the entity.
+     *
+     * @param string $entityName
+     * @return string
+     */
+    public function getUriForPost(string $entityName): string
     {
         return $entityName::SINGLE_ENDPOINT . '?' . 'FileId=' . $this->fileID;
     }
 
-    public function getUriForGetById(string $entityName, $id)
+    /**
+     * Create the required uri to make a get by id request for an entity.
+     *
+     * @param string $entityName
+     * @param $id
+     * @return string
+     */
+    public function getUriForGetById(string $entityName, $id): string
     {
         return $entityName::SINGLE_ENDPOINT . '/' . $id . '?' . 'FileId=' . $this->fileID;
     }
 
-    public function getUriForSearch(string $entityName, array $searchParameters)
+    /**
+     * Create a required uri to make a search request for an entity.
+     *
+     * @param string $entityName
+     * @param array $searchParameters
+     * @return string
+     */
+    public function getUriForSearch(string $entityName, array $searchParameters): string
     {
         $query = array_merge(['FileId' => $this->fileID], $searchParameters);
         return $entityName::SEARCH_ENDPOINT . '?' . http_build_query($query);
