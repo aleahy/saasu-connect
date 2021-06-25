@@ -24,7 +24,7 @@ class SaasuAPI
      */
     public static function createClient(string $username,
                                         string $password,
-                                        $baseURI = 'https://api.saasu.com'): Client
+                                        string $baseURI = 'https://api.saasu.com'): Client
     {
         $reauth_client = new Client([
             'base_uri' => 'https://api.saasu.com'
@@ -51,7 +51,6 @@ class SaasuAPI
     {
         $this->client = $client;
         $this->fileID = $fileID;
-
     }
 
     /**
@@ -74,6 +73,27 @@ class SaasuAPI
     }
 
     /**
+     * Retrieve all specified entities
+     *
+     * @param string $entityName
+     * @return array|\int[]&.
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     */
+    public function getAllEntities(string $entityName)
+    {
+        $entities = [];
+        $resultName = $entityName::SEARCH_ENDPOINT;
+
+        $page = 1;
+        $resp = $this->findEntity($entityName, ['PageSize' => 100]);
+        while(count($resp->$resultName) > 0) {
+            $entities = array_merge($entities, $resp->$resultName);
+            $page++;
+            $resp = $this->findEntity($entityName, ['PageSize' => 100, 'Page' => $page]);
+        }
+        return $entities;
+    }
+    /**
      * Make a post request to insert an entity with the provided attributes.
      *
      * @param string $entityName
@@ -95,17 +115,38 @@ class SaasuAPI
      * Get the specific entity with the provided id
      *
      * @param string $entityName
-     * @param $id
+     * @param int $id
      * @return mixed
      * @throws \GuzzleHttp\Exception\GuzzleException
      */
-    public function getEntity(string $entityName, $id)
+    public function getEntity(string $entityName, int $id)
     {
         $uri = $this->getUriForGetById($entityName, $id);
         $response = $this->client->request('GET', $uri);
         $json = $response->getBody()->getContents();
         return json_decode($json);
     }
+
+    /**
+     * Update a specific entity with the provided attributes.
+     * Note: LastUpdatedId must be supplied.
+     *
+     * @param string $entityName
+     * @param int $id
+     * @param array $attributes
+     * @return mixed
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     */
+    public function updateEntity(string $entityName, int $id, array $attributes)
+    {
+        $uri = $this->getUriForGetById($entityName, $id);
+        $response = $this->client->request('PUT', $uri, [
+            'json' => $attributes
+        ]);
+        $json = $response->getBody()->getContents();
+        return json_decode($json);
+    }
+
 
     /**
      * Create the required uri to make a post request for the entity.
@@ -122,10 +163,10 @@ class SaasuAPI
      * Create the required uri to make a get by id request for an entity.
      *
      * @param string $entityName
-     * @param $id
+     * @param int $id
      * @return string
      */
-    public function getUriForGetById(string $entityName, $id): string
+    public function getUriForGetById(string $entityName, int $id): string
     {
         return $entityName::SINGLE_ENDPOINT . '/' . $id . '?' . 'FileId=' . $this->fileID;
     }
