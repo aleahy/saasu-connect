@@ -61,7 +61,7 @@ class SaasuAPI
      * @return mixed
      * @throws \GuzzleHttp\Exception\GuzzleException
      */
-    public function findEntity(string $entityName, array $searchParameters)
+    public function findEntities(string $entityName, array $searchParameters)
     {
         $endpoint = $entityName::SEARCH_ENDPOINT;
         $query = array_merge(['FileId' => $this->fileID], $searchParameters);
@@ -69,7 +69,9 @@ class SaasuAPI
         $response = $this->client->request('GET', $uri);
 
         $json = $response->getBody()->getContents();
-        return json_decode($json);
+        $data = json_decode($json, true);
+
+        return $data[$endpoint];
     }
 
     /**
@@ -79,17 +81,18 @@ class SaasuAPI
      * @return array|\int[]&.
      * @throws \GuzzleHttp\Exception\GuzzleException
      */
-    public function getAllEntities(string $entityName)
+    public function getAllEntities(string $entityName, array $searchParams = [])
     {
         $entities = [];
         $resultName = $entityName::SEARCH_ENDPOINT;
-
+        $params = ['PageSize' => 100] + $searchParams;
         $page = 1;
-        $resp = $this->findEntity($entityName, ['PageSize' => 100]);
-        while(count($resp->$resultName) > 0) {
-            $entities = array_merge($entities, $resp->$resultName);
+        $resp = $this->findEntities($entityName, $params);
+        while(count($resp) > 0) {
+            $entities = array_merge($entities, $resp);
             $page++;
-            $resp = $this->findEntity($entityName, ['PageSize' => 100, 'Page' => $page]);
+            $params = ['PageSize' => 100, 'Page' => $page] + $searchParams;
+            $resp = $this->findEntities($entityName, $params);
         }
         return $entities;
     }
@@ -108,7 +111,7 @@ class SaasuAPI
             'json' => $attributes
         ]);
         $json = $response->getBody()->getContents();
-        return json_decode($json);
+        return json_decode($json, true);
     }
 
     /**
@@ -124,7 +127,7 @@ class SaasuAPI
         $uri = $this->getUriForGetById($entityName, $id);
         $response = $this->client->request('GET', $uri);
         $json = $response->getBody()->getContents();
-        return json_decode($json);
+        return json_decode($json, true);
     }
 
     /**
@@ -144,7 +147,7 @@ class SaasuAPI
             'json' => $attributes
         ]);
         $json = $response->getBody()->getContents();
-        return json_decode($json);
+        return json_decode($json, true);
     }
 
 
