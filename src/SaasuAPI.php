@@ -29,16 +29,20 @@ class SaasuAPI
         $reauth_client = new Client([
             'base_uri' => 'https://api.saasu.com'
         ]);
+
         $reauth_config = [
             'client_id' => '',
             'username' => $username,
             'password' => $password,
             'scope' => 'full'
         ];
+
         $grant_type = new PasswordCredentials($reauth_client, $reauth_config);
+
         $stack = HandlerStack::create();
         $stack->push(new OAuth2Middleware($grant_type));
         $stack->push(RateLimiterMiddleware::perSecond(1));
+
         return new Client([
             'base_uri' => $baseURI,
             'handler' => $stack,
@@ -64,11 +68,15 @@ class SaasuAPI
     public function findEntities(string $entityName, array $searchParameters)
     {
         $endpoint = $entityName::SEARCH_ENDPOINT;
+
         $query = array_merge(['FileId' => $this->fileID], $searchParameters);
+
         $uri = $entityName::SEARCH_ENDPOINT . '?' . http_build_query($query);
+
         $response = $this->client->request('GET', $uri);
 
         $json = $response->getBody()->getContents();
+
         $data = json_decode($json, true);
 
         return $data[$endpoint];
@@ -78,39 +86,48 @@ class SaasuAPI
      * Retrieve all specified entities
      *
      * @param string $entityName
-     * @return array|\int[]&.
+     * @param array $searchParams
+     * @return array
      * @throws \GuzzleHttp\Exception\GuzzleException
      */
     public function getAllEntities(string $entityName, array $searchParams = [])
     {
         $entities = [];
-        $resultName = $entityName::SEARCH_ENDPOINT;
         $params = ['PageSize' => 100] + $searchParams;
         $page = 1;
+
         $resp = $this->findEntities($entityName, $params);
+
         while(count($resp) > 0) {
             $entities = array_merge($entities, $resp);
+
             $page++;
             $params = ['PageSize' => 100, 'Page' => $page] + $searchParams;
+
             $resp = $this->findEntities($entityName, $params);
         }
+
         return $entities;
     }
+
     /**
      * Make a post request to insert an entity with the provided attributes.
      *
      * @param string $entityName
      * @param array $attributes
-     * @return mixed
+     * @return array
      * @throws \GuzzleHttp\Exception\GuzzleException
      */
     public function insertEntity(string $entityName, array $attributes)
     {
         $uri = $this->getUriForPost($entityName);
+
         $response = $this->client->request('POST', $uri, [
             'json' => $attributes
         ]);
+
         $json = $response->getBody()->getContents();
+
         return json_decode($json, true);
     }
 
@@ -119,14 +136,17 @@ class SaasuAPI
      *
      * @param string $entityName
      * @param int $id
-     * @return mixed
+     * @return array
      * @throws \GuzzleHttp\Exception\GuzzleException
      */
     public function getEntity(string $entityName, int $id)
     {
         $uri = $this->getUriForGetById($entityName, $id);
+
         $response = $this->client->request('GET', $uri);
+
         $json = $response->getBody()->getContents();
+
         return json_decode($json, true);
     }
 
@@ -137,16 +157,19 @@ class SaasuAPI
      * @param string $entityName
      * @param int $id
      * @param array $attributes
-     * @return mixed
+     * @return array
      * @throws \GuzzleHttp\Exception\GuzzleException
      */
     public function updateEntity(string $entityName, int $id, array $attributes)
     {
         $uri = $this->getUriForGetById($entityName, $id);
+
         $response = $this->client->request('PUT', $uri, [
             'json' => $attributes
         ]);
+
         $json = $response->getBody()->getContents();
+
         return json_decode($json, true);
     }
 
